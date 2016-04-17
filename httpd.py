@@ -4,9 +4,9 @@ from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 import ssl
 import urlparse
 import os
-import subprocess
 import json
 import uuid
+from docker import Client
 
 class PostHandler(BaseHTTPRequestHandler):
     def do_POST(self):
@@ -21,12 +21,28 @@ class PostHandler(BaseHTTPRequestHandler):
         payload = json.loads(body)
 
         id = str(uuid.uuid4())
-        subprocess.Popen(['/ci.sh', payload['after'], id])
+
+        cli = Client(base_url='unix://var/run/docker.sock')
+        container = cli.create_container(
+            volumes = [
+                '/var/run/docker.sock:/var/run/docker.sock'
+            ],
+            host_config=cli.create_host_config(binds=[
+                '/var/run/docker.sock:/var/run/docker.sock'
+            ]),
+            name = id,
+            tty = True,
+            environment = dict(os.environ),
+            image = os.getenv('BUILD_IMAGE', 'docteurklein/compose-ci'),
+            command = ['/ci.sh', payload['after'], id]
+        )
+        cli.start(container=container.get('Id'))
 
         self.send_response(202)
         self.end_headers()
 
         self.wfile.write(id)
+        self.wfile.write("\n")
 
 
 httpd = HTTPServer(('0.0.0.0', 80), PostHandler)

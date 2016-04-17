@@ -17,12 +17,12 @@ function export_env {
 
 function run {
     exitCode=1
-    logs
+    init_logs
     export_env
     trap finish EXIT
     gh_status "pending" || true
     download
-    ${HOOK} &> >(tee $logs/hook)
+    ${HOOK} &> >(tee /logs)
     exitCode=$?
 }
 
@@ -37,43 +37,36 @@ JSON
 
 function download {
     url="https://api.github.com/repos/${GITHUB_REPO}/tarball/$commit"
-    dir="/tmp/builds/${uuid}";
-    mkdir -p $dir
-    curl -H "Authorization: token ${GITHUB_TOKEN}" -kL $url | tar xz -C $dir
-    cd $dir/*
+    mkdir -p /tarball
+    curl -H "Authorization: token ${GITHUB_TOKEN}" -kL $url | tar xz -C /tarball
+    cd /tarball/*
 }
 
-function logs {
-    logs="/tmp/logs/${uuid}";
-    mkdir -p $logs
-    touch $logs/all
-    cat >> $logs/hook <<EOF
+function init_logs {
+    cat > /logs <<EOF
 
     Oops! The hook didn't even run.
     Look at the logs at the given build uuid.
 
 EOF
-
-    exec > >(tee -i $logs/all)
-    exec 2>&1
 }
 
 function notify {
     if [ -z ${SMTP_TO-} ]; then
         return
     fi
-    cat >> $logs/hook <<EOF
+    cat >> /logs <<EOF
 
     ----------------------------------------------
     build uuid: ${uuid}
     ----------------------------------------------
 
 EOF
-    docker version &>> $logs/hook
-    docker-compose version &>> $logs/hook
+    docker version &>> /logs
+    docker-compose version &>> /logs
 
     state=$([ $exitCode == 0 ] && echo 'passed' || echo 'failed')
-    cat $logs/hook | aha -b | mutt \
+    cat /logs | aha -b | mutt \
         -s "[${GITHUB_REPO} ci] commit ${short_commit} ${state}!" \
         -e "set content_type=text/html" \
         -e "set smtp_url=smtp://${SMTP_USER}@${SMTP_HOST}:${SMTP_PORT}" \
@@ -90,10 +83,7 @@ function finish {
         docker-compose stop
         docker-compose rm -fv --all
         docker network rm "${COMPOSE_PROJECT_NAME}_default"
-        rm -rf $dir
-    fi
-    if [ "${KEEP_LOGS-1}" = 0 ] ; then
-        rm -rf $logs
+        docker rm -fv ${uuid} # remove myself!
     fi
 }
 

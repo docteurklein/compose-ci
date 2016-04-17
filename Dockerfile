@@ -21,7 +21,4 @@ EXPOSE 80
 
 CMD ["python", "/httpd.py"]
 
-VOLUME "/tmp/builds"
-VOLUME "/tmp/logs"
-
 COPY . /

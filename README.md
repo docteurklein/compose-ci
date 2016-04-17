@@ -32,9 +32,9 @@ It will:
  - [notify](https://developer.github.com/v3/repos/statuses/) github of the build status
  - download and extract the corresponding tarball, then `cd` inside it
  - export some environment variables (`$COMPOSE_PROJECT_NAME`, `$commit`, `$short_commit`, …)
- - execute whatever `$HOOK` command you configured
+ - execute the `$HOOK` command inside a separate container
  - send a mail containing the `$HOOK` command output
- - cleanup running containers, networks and logs afterwards
+ - cleanup running containers and networks afterwards
 
 ## Why ?
 
@@ -86,7 +86,7 @@ COPY hook /hook # optional, to embed a hook file
 
 set -exuo pipefail # stop on failure
 
-# logging into aws ECR (docker login), for private registry
+# auth for private registry
 eval $(aws ecr get-login)
 
 docker-compose pull
@@ -125,10 +125,10 @@ Some variables are mandatory:
 
 Some are optional:
 
+ - `$BUILD_IMAGE` the image to use for separate containers (default: docteurklein/compose-ci)
  - `$SMTP_*` if you want to receive emails
  - `$CERT_PATH` the absolute path to your https certificate
- - `$GARBAGE_COLLECT` set to 0 to keep the build contexts on disk (default 1)
- - `$KEEP_LOGS` set to 0 to remove logs from disk (default 1)
+ - `$GARBAGE_COLLECT` set to 0 to keep the containers running (default 1)
  - whatever else that is required by your command
 
 ``` bash
@@ -162,28 +162,24 @@ You can simulate a github webhook request using:
 
     curl -X POST "$(docker-machine ip my_ci):8080/?token=$GITHUB_TOKEN" -d '{"after": "<commit>"}'
 
-## Volumes
+## Logs and artifacts
 
-This image declares 2 volumes:
+Each build is executed inside a separate container, 
+which means we can leverage the docker capabilities to retrieve logs and data.
 
-### /tmp/logs
+> Note: These separate containers are removed if `$GARBAGE_COLLECT=1`.
 
-Stores all the execution outputs.
-If you decided to keep the logs, you can retrieve them using the build uuid:
+### see what happened
 
-    less /tmp/logs/<uuid>/all
+    docker logs <uuid>
 
-> Note: **all** the logs are also redirected to docker logs.
+### re-execute a build
 
-### /tmp/builds
+    docker start -a <uuid>
 
-Stores all extracted tarballs.
-That's where is executed the command.
-It's cleaned-up after each build, unless you deactivated garbage collecting.
+### get files
 
-If you decided to keep the builds, you can retrieve them using the build uuid:
-
-    ls /tmp/builds/<uuid>/
+    docker cp <uuid>/tarball .
 
 > Note: The uuid is visible at the end of every email and in the response of the webhook http request.
 
@@ -197,7 +193,6 @@ The only verification that is made is the `$GITHUB_TOKEN` comparison...
 That same token is used to authenticate against the github API.
 
 This is **not** intended to replace a multi-tenant SaaS.  
-This is **not** isolated. All the builds share the same context.  
 This is however not really important since you can launch one instance per project.
 
 If you mount the docker socket, **anyone** can do **anything** to your host.  
