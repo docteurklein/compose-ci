@@ -8,6 +8,9 @@ import json
 import uuid
 from docker import Client
 
+socket = os.environ.get('DOCKER_HOST')
+cli = Client(base_url = socket)
+
 class PostHandler(BaseHTTPRequestHandler):
     def do_POST(self):
         params = urlparse.parse_qs(urlparse.urlparse(self.path).query)
@@ -22,21 +25,17 @@ class PostHandler(BaseHTTPRequestHandler):
 
         id = str(uuid.uuid4())
 
-        cli = Client(base_url='unix://var/run/docker.sock')
+        socket_mount = ['%s:%s' % (x[7:], x[7:]) for x in [socket] if x.startswith('unix://')]
         container = cli.create_container(
-            volumes = [
-                '/var/run/docker.sock:/var/run/docker.sock'
-            ],
-            host_config=cli.create_host_config(binds=[
-                '/var/run/docker.sock:/var/run/docker.sock'
-            ]),
+            volumes = socket_mount,
+            host_config = cli.create_host_config(binds = socket_mount),
             name = id,
             tty = True,
             environment = dict(os.environ),
-            image = os.getenv('BUILD_IMAGE', 'docteurklein/compose-ci'),
-            command = ['/ci.sh', payload['after'], id]
+            image = os.getenv('BUILD_IMAGE'),
+            command = [os.getenv('BUILD_CMD'), payload['after'], id]
         )
-        cli.start(container=container.get('Id'))
+        cli.start(container.get('Id'))
 
         self.send_response(202)
         self.end_headers()

@@ -6,15 +6,13 @@
 # docker-machine create --driver <driver> my_ci
 eval (docker-machine env my_ci)
 docker run -d \
-    -e HOOK="docker-compose run tests" \
     -e GITHUB_TOKEN -e GITHUB_REPO \
     -v /var/run/docker.sock:/var/run/docker.sock \
     -p 8080:80 \
     docteurklein/compose-ci
 
-curl -X POST \
+curl -X POST "https://api.github.com/repos/${GITHUB_REPO}/hooks" \
     -H "Authorization: token ${GITHUB_TOKEN}" \
-    "https://api.github.com/repos/${GITHUB_REPO}/hooks" \
     -d@- <<JSON
       { "name": "web", "active": true, "events": [ "push" ], "config": {
         "url": "http://$(docker-machine ip my_ci):8080/?token=${GITHUB_TOKEN}",
@@ -29,12 +27,13 @@ JSON
 A simple, docker(-compose) enabled, alpine-based container, listening for github webhooks.
 
 It will:
+ - listen to github webhooks
  - [notify](https://developer.github.com/v3/repos/statuses/) github of the build status
  - download and extract the corresponding tarball, then `cd` inside it
  - export some environment variables (`$COMPOSE_PROJECT_NAME`, `$commit`, `$short_commit`, …)
  - execute the `$HOOK` command inside a separate container
  - send a mail containing the `$HOOK` command output
- - cleanup running containers and networks afterwards
+ - cleanup running containers and default network afterwards
 
 ## Why ?
 
@@ -67,49 +66,9 @@ In order to use it, you can `COPY` it in the image, or mount it using:
 FROM docteurklein/compose-ci
 
 COPY server.pem /certs/server.pem
-COPY hook /hook # optional, to embed a hook file
-
-# add extra packages
-# RUN apk add --update <packages>
 ```
 
 > Note: don't forget to add the `-e CERT_PATH=/certs/server.pem` env variable.
-
-### Embed a `hook` file
-
-> Note: this is optional. Run this with the appropriate `$HOOK` config.  
-> You have access to the `docker`, `aws`, and `docker-compose` commands, plus all what alpine proposes.  
-> All the output (stderr included) of this script will be sent to you by mail.  
-
-``` bash
-#!/bin/bash
-
-set -exuo pipefail # stop on failure
-
-# auth for private registry
-eval $(aws ecr get-login)
-
-docker-compose pull
-
-# build latest images
-docker-compose build
-
-# run containers
-docker-compose up -d
-
-docker-compose run tests
-# or ./bin/ci
-# or ./bin/test
-
-# push latest images in ECR only if tests pass
-images=( "my" "images" "names" )
-for image in "${images[@]}"
-do
-    docker push ${DOCKER_REGISTRY}/${image}:latest # (latest or $short_commit)
-done
-```
-
-> Note: Don't forget to `chmod +x hook`.
 
 ### Run it
 
@@ -119,16 +78,19 @@ In order to listen to github webhooks, you'll need to define some environment va
 
 Some variables are mandatory:
 
- - `$HOOK` the command to execute
  - `$GITHUB_TOKEN` a valid o-auth token
  - `$GITHUB_REPO` to know which tarball to download
 
 Some are optional:
 
+ - `$HOOK` the command to execute (default: `/hook 'docker-compose run --rm tests'`)
  - `$BUILD_IMAGE` the image to use for separate containers (default: docteurklein/compose-ci)
+ - `$BUILD_CMD` the command to execute in this separate container (default: /ci.sh)
+  - receives the commit and the uuid as arguments
  - `$SMTP_*` if you want to receive emails
  - `$CERT_PATH` the absolute path to your https certificate
- - `$GARBAGE_COLLECT` set to 0 to keep the containers running (default 1)
+ - `$GARBAGE_COLLECT` set to 0 to keep the build container (default: 1)
+ - `$DOCKER_HOST` the docker engine socket (default: unix:///var/run/docker.sock)
  - whatever else that is required by your command
 
 ``` bash
@@ -136,7 +98,7 @@ docker build -t my_ci .
 
 docker run -it --rm \
     -p 8080:80 \
-    -e HOOK="/hook" \
+    -e HOOK="/hook 'docker-compose run --rm php vendor/bin/phpspec r'" \
     -e GITHUB_TOKEN -e GITHUB_REPO \
     -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION \
     -e SMTP_FROM -e SMTP_TO -e SMTP_HOST -e SMTP_PORT -e SMTP_USER -e SMTP_PASS \
@@ -148,11 +110,11 @@ docker run -it --rm \
 > /!\ This means that any docker command executed by the `hook` will be made against the **host** docker engine.
 
 
-*Tadaaa!* You now have a service waiting for web hooks on port 8080.  
-Grab the IP address of your host and configure a [github web hook](https://developer.github.com/webhooks/).
+*Tadaaa!* You now have a service waiting for webhooks on port 8080.  
+Grab the IP address of your host and configure a [github webhook](https://developer.github.com/webhooks/).
 
-The url **MUST** contain [`?token=<my-oauth-token>`](https://github.com/settings/tokens/new).  
-This token **MUST** match `$GITHUB_TOKEN`.
+> Note: The url **MUST** contain [`?token=<my-oauth-token>`](https://github.com/settings/tokens/new).  
+> This token **MUST** match `$GITHUB_TOKEN`.
 
 > Note: Depending wether your certificate (`server.pem`) is correctly signed, you might have to disable SSL verification.
 
@@ -189,7 +151,7 @@ which means we can leverage the docker capabilities to retrieve logs and data.
 It is SSL-ready, but not enabled by default. You need to generate a certificate and enable it,
 by using the `CERT_PATH` variable.
 
-The only verification that is made is the `$GITHUB_TOKEN` comparison...
+The only verification that is made is the `$GITHUB_TOKEN` comparison  
 That same token is used to authenticate against the github API.
 
 This is **not** intended to replace a multi-tenant SaaS.  
