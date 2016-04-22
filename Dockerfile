@@ -4,12 +4,12 @@ COPY repositories /etc/apk/repositories
 
 RUN apk add --no-cache \
     docker \
-    py-pip \
+    python3 \
     curl \
     unzip \
     aha@testing \
     bash \
-    && pip install docker-compose awscli \
+    && pip3 install docker-compose awscli \
     && rm -rf \
         /tmp/* \
         /root/.cache \
