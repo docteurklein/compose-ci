@@ -9,17 +9,18 @@ import sys
 
 project = project_from_options('.', {})
 
-def display(project, repository, tag):
-    for x in project.client.push(repository, tag, stream=True):
-        #sys.stdout.write(chr(27) + '[2K')
-        print("%s: %s" % (repository, x))
+def display(repository, output):
+    for line in output:
+        sys.stdout.write('\033[2J')
+        sys.stdout.write('\033[H')
+        sys.stdout.write('%s: %s\r' % (repository, line))
+        sys.stdout.flush()
 
-with concurrent.futures.ThreadPoolExecutor(max_workers=4) as e:
+with concurrent.futures.ThreadPoolExecutor() as e:
     for service in project.get_services():
         if service.image_name.startswith(environ.get('DOCKER_REGISTRY')):
             tag = sys.argv[1]
             repository, actual_tag = utils.parse_repository_tag(service.image_name)
-            registry, image = auth.resolve_repository_name(repository)
             project.client.tag(repository, repository, tag)
-            e.submit(display, project, repository, tag)
+            e.submit(display, repository, project.client.push(repository, tag, stream=True))
 

@@ -20,10 +20,12 @@ EXPOSE 80
 
 ENV DOCKER_HOST=unix:///var/run/docker.sock
 ENV BUILD_IMAGE=docteurklein/compose-ci
-ENV BUILD_CMD=/ci.sh
+ENV BUILD_CMD=/ci/bash/ci.sh
 ENV GARBAGE_COLLECT=1
-ENV HOOK='/hook "docker-compose run --rm tests"'
+ENV HOOK='/ci/hook "docker-compose run --rm tests"'
 
-CMD ["python", "/httpd.py"]
+WORKDIR /ci
 
-COPY . /
+CMD ["python3", "/ci/python/httpd.py"]
+
+COPY . /ci

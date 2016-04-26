@@ -69,7 +69,7 @@ EOF
     docker-compose version &>> /logs
 
     state=$([ $exitCode == 0 ] && echo 'passed' || echo "failed (exit $exitCode)")
-    cat /logs | aha -b | python /mail.py "[${GITHUB_REPO} ci] ${short_commit} ${state}!"
+    cat /logs | aha -b | python3 /ci/python/mail.py "[${GITHUB_REPO} ci] ${short_commit} ${state}!"
 }
 
 function finish {

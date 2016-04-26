@@ -83,7 +83,7 @@ Some variables are mandatory:
 
 Some are optional:
 
- - `$HOOK` the command to execute (default: `/hook 'docker-compose run --rm tests'`)
+ - `$HOOK` the command to execute (default: `/ci/hook 'docker-compose run --rm tests'`)
  - `$BUILD_IMAGE` the image to use for separate containers (default: docteurklein/compose-ci)
  - `$BUILD_CMD` the command to execute in this separate container (default: /ci.sh)
   - receives the commit and the uuid as arguments
@@ -98,7 +98,7 @@ docker build -t my_ci .
 
 docker run -it --rm \
     -p 8080:80 \
-    -e HOOK="/hook 'docker-compose run --rm php vendor/bin/phpspec r'" \
+    -e HOOK="/ci/hook 'docker-compose run --rm php vendor/bin/phpspec r'" \
     -e GITHUB_TOKEN -e GITHUB_REPO \
     -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION \
     -e SMTP_FROM -e SMTP_TO -e SMTP_HOST -e SMTP_PORT -e SMTP_USER -e SMTP_PASS \
