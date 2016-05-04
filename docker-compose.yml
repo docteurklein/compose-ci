@@ -1,0 +1,6 @@
+version: '2'
+
+services:
+    tests:
+        image: alpine
+        command: /bin/ls -alR
