@@ -18,7 +18,7 @@ class Notifier:
 
     def post(self, commit, state):
         url = 'https://api.github.com/repos/%s/statuses/%s' % (self.repo, commit)
-        data = '{"state": "%s", "context": "[%s ci]"}' % (state, self.repo)
+        data = '{"state": "%s", "context": "[%s CI]"}' % (state, self.repo)
         self.logger.info('notifying %s for %s' % (data, url))
         req = request.Request(url=url, data=data)
         if self.token:

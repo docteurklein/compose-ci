@@ -2,12 +2,11 @@ from .result import Result
 from .tester import Tester
 
 class CI:
-    def __init__(self, repo, fetcher, notifier, get_project, logger, tester, auth=None, pusher=None, mailer=None, garbage_collect=True):
+    def __init__(self, repo, fetcher, notifier, get_project, logger, tester, auth=None, mailer=None, garbage_collect=True):
         self.fetcher = fetcher
         self.notifier = notifier
         self.repo = repo
         self.auth = auth
-        self.pusher = pusher
         self.mailer = mailer
         self.get_project = get_project
         self.logger = logger
@@ -22,7 +21,7 @@ class CI:
 
         if result.is_success():
             self.notifier.success(commit)
-            self.push(project, commit)
+            project.push()
         else:
             self.notifier.failure(commit)
 
@@ -69,11 +68,6 @@ class CI:
         if result.code == 0:
             subject = '[%s]: %s success!' % (self.repo, commit[:7])
         self.mailer.send(subject, result.to_html())
-
-    def push(self, project, commit):
-        if not self.pusher:
-            return
-        self.pusher.push(commit, project)
 
 if __name__ == '__main__':
     import sys

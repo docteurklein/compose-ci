@@ -3,7 +3,6 @@ from unittest import mock, TestCase
 from compose_ci.ci import CI
 from compose_ci.fetcher import Fetcher
 from compose_ci.auth import Auth
-from compose_ci.pusher import Pusher
 from compose_ci.mailer import Mailer
 from compose_ci.tester import Tester
 from compose_ci.result import Result
@@ -18,7 +17,6 @@ class TestCI(TestCase):
         self.fetcher = mock.create_autospec(Fetcher)
         self.fetcher.fetch.return_value = '/some/path'
         self.auth = mock.create_autospec(Auth)
-        self.pusher = mock.create_autospec(Pusher)
         self.mailer = mock.create_autospec(Mailer)
         self.project = mock.create_autospec(Project)
         self.notifier = mock.create_autospec(Notifier)
@@ -32,7 +30,6 @@ class TestCI(TestCase):
             repo='some/repo',
             fetcher=self.fetcher,
             auth=self.auth,
-            pusher=self.pusher,
             mailer=self.mailer,
             get_project=self.get_project,
             logger=self.logger,
@@ -49,7 +46,7 @@ class TestCI(TestCase):
         self.get_project.assert_called_with(project_dir='/some/path', project_name='123')
         self.auth.login.assert_called_with(self.project)
         self.mailer.send.assert_called_with(mock.ANY, mock.ANY)
-        self.pusher.push.assert_called_with('345234c7f914a2431c116cc8840736710105b78e', self.project)
+        self.project.push.assert_called_with()
         self.project.down.assert_called_with(include_volumes=True, remove_orphans=True, remove_image_type=False)
 
     def test_it_pushes_only_on_succsss(self):
@@ -61,4 +58,4 @@ class TestCI(TestCase):
         self.get_project.assert_called_with(project_dir='/some/path', project_name='123')
         self.auth.login.assert_called_with(self.project)
         self.mailer.send.assert_called_with(mock.ANY, mock.ANY)
-        self.pusher.push.assert_not_called()
+        self.project.push.assert_not_called()

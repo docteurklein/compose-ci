@@ -5,7 +5,6 @@ from .ci import CI
 from .mailer import Mailer
 from .fetcher import Fetcher
 from .auth import Auth
-from .pusher import Pusher
 from .tester import Tester
 from .notifier import Notifier
 from .builder import Builder
@@ -43,9 +42,6 @@ ci = lambda: CI(
         email    = environ.get('REGISTRY_EMAIL'),
         logger   = logger,
     ),
-    pusher    = Pusher(
-        registry = environ.get('DOCKER_REGISTRY'),
-    ),
     mailer    = Mailer(
         From     = environ.get('SMTP_FROM'),
         to       = environ.get('SMTP_TO'),
@@ -69,7 +65,11 @@ httpd = lambda: Httpd(
         builder = Builder(
             image   = environ.get('BUILD_IMAGE'),
             command = environ.get('BUILD_CMD', 'python3 -m compose_ci.ci'),
-            socket  = environ.get('DOCKER_HOST'),
+            binds   = [
+                '%s:%s' % (x[7:], x[7:]) for x in [environ.get('DOCKER_HOST')] if x.startswith('unix://')
+            ] + [
+                '%s/.docker:/root/.docker' % (environ.get('HOME'))
+            ],
             client  = Client(environ.get('DOCKER_HOST')),
             env     = dict(environ)
         )

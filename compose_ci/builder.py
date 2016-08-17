@@ -3,13 +3,10 @@ from os.path import exists
 import shlex
 
 class Builder:
-    def __init__(self, image, command, socket, client, env):
+    def __init__(self, image, command, binds, client, env):
         self.image = image
         self.command = command
-        self.socket = socket
-        self.binds = [
-            '%s:%s' % (x[7:], x[7:]) for x in [self.socket] if x.startswith('unix://')
-        ]
+        self.binds = binds
         self.client = client
         self.env = env
 
