@@ -29,11 +29,10 @@ A simple, docker(-compose) enabled, alpine-based container, listening for github
 It will:
  - listen to github webhooks
  - [notify](https://developer.github.com/v3/repos/statuses/) github of the build status
- - download and extract the corresponding tarball, then `cd` inside it
- - export some environment variables (`$COMPOSE_PROJECT_NAME`, `$commit`, `$short_commit`, …)
+ - fetch the corresponding commit
  - execute the `$HOOK` command inside a separate container
  - send a mail containing the `$HOOK` command output
- - cleanup running containers and default network afterwards
+ - cleanup running containers and networks afterwards
 
 ## Why ?
 
@@ -83,10 +82,9 @@ Some variables are mandatory:
 
 Some are optional:
 
- - `$HOOK` the command to execute (default: `/ci/hook 'docker-compose run --rm tests'`)
+ - `$HOOK` the command to execute (default: `docker-compose run tests`)
  - `$BUILD_IMAGE` the image to use for separate containers (default: docteurklein/compose-ci)
- - `$BUILD_CMD` the command to execute in this separate container (default: /ci.sh)
-  - receives the commit and the uuid as arguments
+ - `$BUILD_CMD` the command to execute in this separate container (default: python3 -m compose_ci)
  - `$SMTP_*` if you want to receive emails
  - `$CERT_PATH` the absolute path to your https certificate
  - `$GARBAGE_COLLECT` set to 0 to keep the build container (default: 1)
@@ -98,7 +96,7 @@ docker build -t my_ci .
 
 docker run -it --rm \
     -p 8080:80 \
-    -e HOOK="/ci/hook 'docker-compose run --rm php vendor/bin/phpspec r'" \
+    -e HOOK="docker-compose run --rm php vendor/bin/phpspec r" \
     -e GITHUB_TOKEN -e GITHUB_REPO \
     -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION \
     -e SMTP_FROM -e SMTP_TO -e SMTP_HOST -e SMTP_PORT -e SMTP_USER -e SMTP_PASS \
@@ -143,7 +141,7 @@ which means we can leverage the docker capabilities to retrieve logs and data.
 
     docker cp <uuid>/tarball .
 
-> Note: The uuid is visible at the end of every email and in the response of the webhook http request.
+> Note: The `uuid` is visible at the end of every email and in the response of the webhook http request.
 
 
 ## A note about security
@@ -161,4 +159,7 @@ If you mount the docker socket, **anyone** can do **anything** to your host.
 If you don't want that, take a look at [--userns-remap](https://docs.docker.com/engine/reference/commandline/daemon/#starting-the-daemon-with-user-namespaces-enabled).  
 But even then, the same docker engine is shared for every build.
 
+## Tests
+
+    python -m unittest discover -s tests/unit -p "*_test.py"
 
