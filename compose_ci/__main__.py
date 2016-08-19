@@ -41,7 +41,7 @@ ci = lambda: CI(
         password = environ.get('REGISTRY_PASS'),
         email    = environ.get('REGISTRY_EMAIL'),
         logger   = logger,
-    ),
+    ) if environ.get('REGISTRY_USER') else None,
     mailer    = Mailer(
         From     = environ.get('SMTP_FROM'),
         to       = environ.get('SMTP_TO'),
@@ -50,7 +50,7 @@ ci = lambda: CI(
         user     = environ.get('SMTP_USER'),
         password = environ.get('SMTP_PASS'),
         logger   = logger,
-    ),
+    ) if environ.get('SMTP_HOST') else None,
     get_project = partial(get_project,
         config_path=environ.get('COMPOSE_FILE', 'docker-compose.yml').split(pathsep)
     ),
@@ -67,8 +67,6 @@ httpd = lambda: Httpd(
             command = environ.get('BUILD_CMD', 'python3 -m compose_ci.ci'),
             binds   = [
                 '%s:%s' % (x[7:], x[7:]) for x in [environ.get('DOCKER_HOST')] if x.startswith('unix://')
-            ] + [
-                '%s/.docker:/root/.docker' % (environ.get('HOME'))
             ],
             client  = Client(environ.get('DOCKER_HOST')),
             env     = dict(environ)

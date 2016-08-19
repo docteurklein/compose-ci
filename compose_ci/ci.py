@@ -52,14 +52,20 @@ class CI:
         self.pull(project)
         self.logger.info('building images')
         project.build()
+        self.logger.info('reconfiguring services')
+        self.reconfigure(project)
         self.logger.info('creating services')
         project.up(do_build=False, detached=True)
+
+    def reconfigure(self, project):
+        for service in project.services:
+            service.options['ports'] = []
 
     def pull(self, project):
         self.logger.info('pulling images')
         if self.auth:
             self.auth.login(project)
-        project.pull()
+        project.pull(ignore_pull_failures=True)
 
     def notify(self, commit, result):
         if not self.mailer:
