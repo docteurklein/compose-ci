@@ -54,7 +54,7 @@ ci = lambda: CI(
     get_project = partial(get_project,
         config_path=environ.get('COMPOSE_FILE', 'docker-compose.yml').split(pathsep)
     ),
-    garbage_collect=environ.get('GARBAGE_COLLECT', True)
+    garbage_collect=bool(int(environ.get('GARBAGE_COLLECT', True)))
 )
 
 httpd = lambda: Httpd(
