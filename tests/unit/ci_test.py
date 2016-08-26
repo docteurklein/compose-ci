@@ -21,6 +21,9 @@ class TestCI(TestCase):
         self.project = mock.create_autospec(Project)
         self.notifier = mock.create_autospec(Notifier)
         self.project.name = '123'
+        self.service = mock.create_autospec(Service)
+        self.service.options = {'ports': ['80:80']}
+        self.project.services = [self.service]
         self.get_project = mock.Mock()
         self.get_project.return_value = self.project
         self.logger = mock.create_autospec(logging.Logger)
@@ -59,3 +62,8 @@ class TestCI(TestCase):
         self.auth.login.assert_called_with(self.project)
         self.mailer.send.assert_called_with(mock.ANY, mock.ANY)
         self.project.push.assert_not_called()
+
+    def test_it_reconfigures_ports(self):
+
+        self.ci.run('345234c7f914a2431c116cc8840736710105b78e', '123')
+        self.assertEqual(self.service.options.get('ports'), [])

@@ -42,8 +42,9 @@ class CI:
             self.logger.debug(result)
             self.notify(commit, result)
         finally:
-            self.logger.info('putting down %s' % (project.name))
-            project.down(include_volumes=True, remove_orphans=True, remove_image_type=False)
+            if self.garbage_collect:
+                self.logger.info('putting down %s' % (project.name))
+                project.down(include_volumes=True, remove_orphans=True, remove_image_type=False)
 
         return (project, result)
 
