@@ -8,16 +8,17 @@ import uuid
 from urllib.parse import parse_qs, urlparse
 
 class Httpd:
-    def __init__(self, addr, handler, cert=None):
+    def __init__(self, addr, handler, logger, cert=None):
         socketserver.TCPServer.allow_reuse_address = True
         self.server = socketserver.TCPServer(addr, handler)
+        self.logger = logger
 
         if cert:
             self.server.socket = ssl.wrap_socket(self.server.socket, certfile=cert, server_side=True)
-            print('Using SSL certificate: %s' % cert)
+            self.logger.info('Using SSL certificate: %s' % cert)
 
     def run(self):
-        print('Ready to CI!')
+        self.logger.info('Ready to CI!')
         self.server.serve_forever()
 
 class PostHandler(http.server.BaseHTTPRequestHandler):
@@ -27,9 +28,11 @@ class PostHandler(http.server.BaseHTTPRequestHandler):
         super().__init__(request, client_address, server)
 
     def do_POST(self):
+        self.logger.debug('received HTTP POST %s' % (self.path))
         params = parse_qs(urlparse(self.path).query)
 
         if params.get('token') != [self.token]:
+            self.logger.error('expected token "%s", got "%s"' % (self.token, params.get('token')))
             self.send_response(401)
             self.end_headers()
             return
@@ -39,6 +42,7 @@ class PostHandler(http.server.BaseHTTPRequestHandler):
 
         id = str(uuid.uuid4())
 
+        self.logger.info('Building %s for commit %s' % (id, payload['after']))
         self.builder.build(payload['after'], id)
 
         self.send_response(202)
