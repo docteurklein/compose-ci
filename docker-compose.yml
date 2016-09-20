@@ -2,5 +2,5 @@ version: '2'
 
 services:
     tests:
-        image: alpine
-        command: /bin/ls -alR
+        build: .
+        command: python3 -m unittest discover -s tests/unit -p "*_test.py"
