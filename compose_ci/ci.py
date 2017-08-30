@@ -2,10 +2,9 @@ from .result import Result
 from .tester import Tester
 
 class CI:
-    def __init__(self, repo, fetcher, notifier, get_project, logger, tester, auth=None, mailer=None, garbage_collect=True):
+    def __init__(self, fetcher, notifier, get_project, logger, tester, auth=None, mailer=None, garbage_collect=True):
         self.fetcher = fetcher
         self.notifier = notifier
-        self.repo = repo
         self.auth = auth
         self.mailer = mailer
         self.get_project = get_project
@@ -13,17 +12,17 @@ class CI:
         self.tester = tester
         self.garbage_collect = garbage_collect
 
-    def run(self, commit, uuid):
+    def run(self, repo, commit, uuid):
         self.logger.info('build uuid: %s' % (uuid))
-        self.logger.info('commit: %s' % (commit))
-        self.notifier.pending(commit)
-        project, result = self.execute(commit, uuid)
+        self.logger.info('commit: %s#%s' % (repo, commit))
+        self.notifier.pending(repo, commit)
+        project, result = self.execute(repo, commit, uuid)
 
         if result.is_success():
-            self.notifier.success(commit)
+            self.notifier.success(repo, commit)
             project.push()
         else:
-            self.notifier.failure(commit)
+            self.notifier.failure(repo, commit)
 
         if self.garbage_collect:
             try:
@@ -33,14 +32,14 @@ class CI:
 
         return result
 
-    def execute(self, commit, uuid):
-        directory = self.fetcher.fetch(commit)
+    def execute(self, repo, commit, uuid):
+        directory = self.fetcher.fetch(repo, commit)
         project = self.get_project(project_dir=directory, project_name=uuid)
         try:
             self.up(project)
             result = self.tester.test(project, directory)
             self.logger.debug(result)
-            self.notify(commit, result)
+            self.notify(repo, commit, result)
         finally:
             if self.garbage_collect:
                 self.logger.info('putting down %s' % (project.name))
@@ -68,16 +67,16 @@ class CI:
             self.auth.login(project)
         project.pull(ignore_pull_failures=True)
 
-    def notify(self, commit, result):
+    def notify(self, repo, commit, result):
         if not self.mailer:
             return
-        subject = '[%s]: %s failed! (exit code: %s)' % (self.repo, commit[:7], result.code)
+        subject = '[%s]: %s failed! (exit code: %s)' % (repo, commit[:7], result.code)
         if result.code == 0:
-            subject = '[%s]: %s success!' % (self.repo, commit[:7])
+            subject = '[%s]: %s success!' % (repo, commit[:7])
         self.mailer.send(subject, result.to_html())
 
 if __name__ == '__main__':
     import sys
     from .__main__ import ci
-    ci().run(sys.argv[1], sys.argv[2])
+    ci().run(sys.argv[1], sys.argv[2], sys.argv[3])
 

@@ -12,7 +12,7 @@ class TestAuth(TestCase):
     def test_it_logins_against_the_registry(self):
 
         project = mock.create_autospec(Project)
-        project.client = mock.create_autospec(docker.Client)
+        project.client = mock.create_autospec(docker.DockerClient)
         logger = mock.create_autospec(logging.Logger)
 
         auth = Auth(

@@ -8,7 +8,7 @@ function finish {
 trap finish EXIT
 
 docker run -d \
-    -e GITHUB_REPO=docteurklein/compose-ci -e GITHUB_TOKEN \
+    -e GITHUB_TOKEN \
     -v /var/run/docker.sock:/var/run/docker.sock \
     -p 80 \
     -P \
@@ -22,7 +22,10 @@ port=${port##*:}
 
 sleep 2
 
-uuid=$(curl -X POST "localhost:$port/?token=$GITHUB_TOKEN" -d "{\"after\": \"$commit\"}")
+uuid=$(curl -X POST "localhost:$port/?token=$GITHUB_TOKEN" -d@- <<JSON
+    { "after": "$commit", "repository": { "full_name": "docteurklein/compose-ci"} }
+JSON
+)
 
 content=$(docker logs -f $uuid)
 

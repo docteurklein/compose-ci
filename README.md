@@ -6,7 +6,7 @@
 # docker-machine create --driver <driver> my_ci
 eval (docker-machine env my_ci)
 docker run -d \
-    -e GITHUB_TOKEN -e GITHUB_REPO \
+    -e GITHUB_TOKEN \
     -v /var/run/docker.sock:/var/run/docker.sock \
     -p 8080:80 \
     docteurklein/compose-ci
@@ -78,7 +78,6 @@ In order to listen to github webhooks, you'll need to define some environment va
 Some variables are mandatory:
 
  - `$GITHUB_TOKEN` a valid o-auth token
- - `$GITHUB_REPO` to know which tarball to download
 
 Some are optional:
 
@@ -97,7 +96,7 @@ docker build -t my_ci .
 docker run -it --rm \
     -p 8080:80 \
     -e HOOK="docker-compose run --rm php vendor/bin/phpspec r" \
-    -e GITHUB_TOKEN -e GITHUB_REPO \
+    -e GITHUB_TOKEN \
     -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION \
     -e SMTP_FROM -e SMTP_TO -e SMTP_HOST -e SMTP_PORT -e SMTP_USER -e SMTP_PASS \
     -v /var/run/docker.sock:/var/run/docker.sock \

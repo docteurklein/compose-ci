@@ -22,9 +22,10 @@ class Httpd:
         self.server.serve_forever()
 
 class PostHandler(http.server.BaseHTTPRequestHandler):
-    def __init__(self, request, client_address, server, builder, token):
+    def __init__(self, request, client_address, server, builder, token, logger):
         self.builder = builder
         self.token = token
+        self.logger = logger
         super().__init__(request, client_address, server)
 
     def do_POST(self):
@@ -42,8 +43,8 @@ class PostHandler(http.server.BaseHTTPRequestHandler):
 
         id = str(uuid.uuid4())
 
-        self.logger.info('Building %s for commit %s' % (id, payload['after']))
-        self.builder.build(payload['after'], id)
+        self.logger.info('Building %s for commit %s#%s' % (id, payload['repository']['full_name'], payload['after']))
+        self.builder.build(payload['repository']['full_name'], payload['after'], id)
 
         self.send_response(202)
         self.end_headers()

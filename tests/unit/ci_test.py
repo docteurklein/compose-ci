@@ -30,7 +30,6 @@ class TestCI(TestCase):
         self.tester = mock.create_autospec(Tester)
 
         self.ci = CI(
-            repo='some/repo',
             fetcher=self.fetcher,
             auth=self.auth,
             mailer=self.mailer,
@@ -44,7 +43,7 @@ class TestCI(TestCase):
 
         self.tester.test.return_value = Result(0, 'yay')
 
-        self.ci.run('345234c7f914a2431c116cc8840736710105b78e', '123')
+        self.ci.run('some/repo', '345234c7f914a2431c116cc8840736710105b78e', '123')
 
         self.get_project.assert_called_with(project_dir='/some/path', project_name='123')
         self.auth.login.assert_called_with(self.project)
@@ -56,7 +55,7 @@ class TestCI(TestCase):
 
         self.tester.test.return_value = Result(1, 'nope')
 
-        self.ci.run('345234c7f914a2431c116cc8840736710105b78e', '123')
+        self.ci.run('some/repo', '345234c7f914a2431c116cc8840736710105b78e', '123')
 
         self.get_project.assert_called_with(project_dir='/some/path', project_name='123')
         self.auth.login.assert_called_with(self.project)
@@ -65,5 +64,5 @@ class TestCI(TestCase):
 
     def test_it_reconfigures_ports(self):
 
-        self.ci.run('345234c7f914a2431c116cc8840736710105b78e', '123')
+        self.ci.run('some/repo', '345234c7f914a2431c116cc8840736710105b78e', '123')
         self.assertEqual(self.service.options.get('ports'), [])

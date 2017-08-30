@@ -8,7 +8,7 @@ function finish {
 trap finish EXIT
 
 docker run -d \
-    -e GITHUB_REPO=docteurklein/compose-ci -e YEAH \
+    -e YEAH \
     -v /var/run/docker.sock:/var/run/docker.sock \
     -p 80 \
     -P \
@@ -22,7 +22,10 @@ port=${port##*:}
 
 sleep 2
 
-code=$(curl -sLw '%{http_code}' -X POST "localhost:$port/?token=NOPE" -d "{\"after\": \"$commit\"}" -o /dev/null)
+code=$(curl -sLw '%{http_code}' -X POST "localhost:$port/?token=NOPE" -o /dev/null -d@- <<JSON
+    { "after": "$commit", "repository": { "full_name": "docteurklein/compose-ci"} }
+JSON
+)
 
 test $code -eq '401'
 

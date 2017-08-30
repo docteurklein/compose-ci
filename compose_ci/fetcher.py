@@ -3,14 +3,13 @@ from os import path
 import tarfile
 
 class Fetcher:
-    def __init__(self, repo, base_path, token, logger):
-        self.repo = repo
+    def __init__(self, base_path, token, logger):
         self.base_path = base_path
         self.token = token
         self.logger = logger
 
-    def fetch(self, commit):
-        url = 'https://api.github.com/repos/%s/tarball/%s' % (self.repo, commit)
+    def fetch(self, repo, commit):
+        url = 'https://api.github.com/repos/%s/tarball/%s' % (repo, commit)
         self.logger.info('fetching %s' % (url))
         req = request.Request(url)
         if self.token:

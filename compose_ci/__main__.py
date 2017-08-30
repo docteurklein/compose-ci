@@ -10,7 +10,7 @@ from .notifier import Notifier
 from .builder import Builder
 from .httpd import PostHandler, Httpd
 from compose.cli.command import get_project
-from docker import Client
+from docker import APIClient
 import logging
 
 logging.basicConfig(level=environ.get('LOG_LEVEL', logging.INFO), format='%(asctime)s %(message)s')
@@ -18,7 +18,6 @@ logger = logging.getLogger(__name__)
 
 ci = lambda: CI(
     logger    = logger,
-    repo      = environ.get('GITHUB_REPO'),
     tester    = Tester(
         hook       = environ.get('HOOK'),
         logger     = logger,
@@ -26,11 +25,9 @@ ci = lambda: CI(
     ),
     notifier  = Notifier(
         token      = environ.get('GITHUB_TOKEN'),
-        repo      = environ.get('GITHUB_REPO'),
         logger     = logger,
     ),
     fetcher   = Fetcher(
-        repo      = environ.get('GITHUB_REPO'),
         token     = environ.get('GITHUB_TOKEN'),
         base_path = environ.get('BASE_PATH', '/tmp/tarball'),
         logger    = logger,
@@ -69,9 +66,10 @@ httpd = lambda: Httpd(
             binds   = [
                 '%s:%s' % (x[7:], x[7:]) for x in [environ.get('DOCKER_HOST')] if x.startswith('unix://')
             ],
-            client  = Client(environ.get('DOCKER_HOST')),
+            client  = APIClient(environ.get('DOCKER_HOST')),
             env     = dict(environ)
-        )
+        ),
+        logger = logger
     )
 )
 
