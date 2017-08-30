@@ -58,9 +58,10 @@ ci = lambda: CI(
 )
 
 httpd = lambda: Httpd(
-    addr=(environ.get('BIND', '0.0.0.0'), int(environ.get('PORT', 80))),
-    cert=environ.get('CERT_PATH'),
-    handler=partial(PostHandler,
+    addr = (environ.get('BIND', '0.0.0.0'), int(environ.get('PORT', 80))),
+    cert = environ.get('CERT_PATH'),
+    logger = logger,
+    handler = partial(PostHandler,
         token   = environ.get('GITHUB_TOKEN'),
         builder = Builder(
             image   = environ.get('BUILD_IMAGE'),
