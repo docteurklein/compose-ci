@@ -8,8 +8,10 @@ RUN apk add --no-cache \
     docker \
     python3 \
     git \
+    curl \
+    parallel \
     && pip3 install -r requirements.txt \
-    && rm -rf /tmp /root/.cache /var/cache/apk $(find / -regex '.*\.py[co]')
+    && rm -rf /tmp/* /root/.cache /var/cache/apk $(find / -regex '.*\.py[co]')
 
 EXPOSE 80
 
@@ -21,3 +23,4 @@ ENV GARBAGE_COLLECT=1
 CMD ["python3", "-m", "compose_ci.httpd"]
 
 COPY . /ci
+

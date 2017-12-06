@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+
+parallel ::: \
+    'python3 -m unittest discover -s tests/unit -p "*_test.py"' \
+    'sh tests/integration/it_refuses_invalid_tokens.sh' \
+    'sh tests/integration/it_works.sh'

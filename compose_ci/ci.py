@@ -1,5 +1,3 @@
-from .result import Result
-from .tester import Tester
 
 class CI:
     def __init__(self, fetcher, notifier, get_project, logger, tester, auth=None, mailer=None, garbage_collect=True):
@@ -75,8 +73,8 @@ class CI:
             subject = '[%s]: %s success!' % (repo, commit[:7])
         self.mailer.send(subject, result.to_html())
 
+
 if __name__ == '__main__':
     import sys
     from .__main__ import ci
     ci().run(sys.argv[1], sys.argv[2], sys.argv[3])
-
