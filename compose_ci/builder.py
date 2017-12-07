@@ -2,6 +2,7 @@
 from os.path import exists
 import shlex
 
+
 class Builder:
     def __init__(self, image, command, binds, client, env):
         self.image = image
@@ -20,4 +21,3 @@ class Builder:
             command=shlex.split(self.command) + [repo, commit, id]
         )
         self.client.start(container.get('Id'))
-

@@ -7,6 +7,7 @@ services:
         environment:
             GITHUB_TOKEN: $GITHUB_TOKEN
             LOG_LEVEL: DEBUG
+            GARBAGE_COLLECT: '0'
         volumes:
             - /var/run/docker.sock:/var/run/docker.sock
 
@@ -15,9 +16,9 @@ services:
         command: bin/run-tests
         environment:
             GITHUB_TOKEN: $GITHUB_TOKEN
+            GARBAGE_COLLECT: '0'
             commit: $commit
         volumes:
-            - .:/ci
             - /var/run/docker.sock:/var/run/docker.sock
         depends_on:
             - ci

@@ -7,6 +7,7 @@ import json
 import uuid
 from urllib.parse import parse_qs, urlparse
 
+
 class Httpd:
     def __init__(self, addr, handler, logger, cert=None):
         socketserver.TCPServer.allow_reuse_address = True

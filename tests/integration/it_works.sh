@@ -1,6 +1,6 @@
 #!/bin/sh
 
-set -euo pipefail
+set -exuo pipefail
 
 uuid=$(curl -X POST "ci/?token=$GITHUB_TOKEN" -d@- <<JSON
     { "after": "$commit", "repository": { "full_name": "docteurklein/compose-ci"} }
