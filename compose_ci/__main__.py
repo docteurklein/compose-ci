@@ -2,6 +2,7 @@ import sys
 from os import environ, pathsep
 from functools import partial
 from .ci import CI
+from .cd import CD
 from .mailer import Mailer
 from .fetcher import Fetcher
 from .auth import Auth
@@ -52,6 +53,33 @@ ci = lambda: CI(
         config_path=environ.get('COMPOSE_FILE', 'docker-compose.yml').split(pathsep)
     ),
     garbage_collect=bool(int(environ.get('GARBAGE_COLLECT', True)))
+)
+
+cd = lambda: CD(
+    logger    = logger,
+    repo      = environ.get('GITHUB_REPO'),
+    notifier  = Notifier(
+        token      = environ.get('GITHUB_TOKEN'),
+        repo      = environ.get('GITHUB_REPO'),
+        logger     = logger,
+    ),
+    fetcher   = Fetcher(
+        repo      = environ.get('GITHUB_REPO'),
+        token     = environ.get('GITHUB_TOKEN'),
+        base_path = environ.get('BASE_PATH', '/tmp/tarball'),
+        logger    = logger,
+    ),
+    auth      = Auth(
+        registry = environ.get('DOCKER_REGISTRY'),
+        user     = environ.get('REGISTRY_USER'),
+        password = environ.get('REGISTRY_PASS'),
+        email    = environ.get('REGISTRY_EMAIL'),
+        logger   = logger,
+    ) if environ.get('REGISTRY_USER') else None,
+    get_project = partial(get_project,
+        config_path=environ.get('COMPOSE_FILE', 'docker-compose.yml').split(pathsep)
+    ),
+    garbage_collect=environ.get('GARBAGE_COLLECT', True)
 )
 
 httpd = lambda: Httpd(
